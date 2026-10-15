@@ -1,0 +1,1059 @@
+[
+ {
+  "cls": "Stocks",
+  "name": "Custom Bars (OHLC)",
+  "ep": "/v2/aggs/ticker/{stocksTicker}/range/{multiplier}/{timespan}/{from}/{to}",
+  "plan": "Basic",
+  "hit": "1. Stocks > Bars (daily range)"
+ },
+ {
+  "cls": "Stocks",
+  "name": "Daily Market Summary (OHLC)",
+  "ep": "/v2/aggs/grouped/locale/us/market/stocks/{date}",
+  "plan": "Basic",
+  "hit": "1. Stocks > Grouped daily (whole market)"
+ },
+ {
+  "cls": "Stocks",
+  "name": "Daily Ticker Summary (OHLC)",
+  "ep": "/v1/open-close/{stocksTicker}/{date}",
+  "plan": "Basic",
+  "hit": "1. Stocks > Daily open/close"
+ },
+ {
+  "cls": "Stocks",
+  "name": "Previous Day Bar (OHLC)",
+  "ep": "/v2/aggs/ticker/{stocksTicker}/prev",
+  "plan": "Basic",
+  "hit": "0. Smoke test (free plan) > Previous close (stock)"
+ },
+ {
+  "cls": "Stocks",
+  "name": "Dividends",
+  "ep": "/stocks/v1/dividends",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Initial Public Offerings (IPOs)",
+  "ep": "/vX/reference/ipos",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Dividends (Deprecated)",
+  "ep": "/v3/reference/dividends",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Splits (Deprecated)",
+  "ep": "/v3/reference/splits",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Splits",
+  "ep": "/stocks/v1/splits",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Ticker Events",
+  "ep": "/vX/reference/tickers/{id}/events",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "10-K Sections",
+  "ep": "/stocks/filings/10-K/vX/sections",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "13-F Filings",
+  "ep": "/stocks/filings/vX/13-F",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "8-K Disclosures",
+  "ep": "/stocks/filings/8-K/vX/disclosures",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "8-K Text",
+  "ep": "/stocks/filings/8-K/vX/text",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Disclosure Categories",
+  "ep": "/stocks/taxonomies/vX/disclosures",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Form 3",
+  "ep": "/stocks/filings/vX/form-3",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Form 4",
+  "ep": "/stocks/filings/vX/form-4",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "SEC EDGAR Index",
+  "ep": "/stocks/filings/vX/index",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Risk Categories",
+  "ep": "/stocks/taxonomies/vX/risk-factors",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Risk Factors",
+  "ep": "/stocks/filings/vX/risk-factors",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Balance Sheets",
+  "ep": "/stocks/financials/v1/balance-sheets",
+  "plan": "Advanced",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Cash Flow Statements",
+  "ep": "/stocks/financials/v1/cash-flow-statements",
+  "plan": "Advanced",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Float",
+  "ep": "/stocks/vX/float",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Income Statements",
+  "ep": "/stocks/financials/v1/income-statements",
+  "plan": "Advanced",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Ratios",
+  "ep": "/stocks/financials/v1/ratios",
+  "plan": "Advanced",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Short Interest",
+  "ep": "/stocks/v1/short-interest",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Short Volume",
+  "ep": "/stocks/v1/short-volume",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Condition Codes",
+  "ep": "/v3/reference/conditions",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Exchanges",
+  "ep": "/v3/reference/exchanges",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Market Holidays",
+  "ep": "/v1/marketstatus/upcoming",
+  "plan": "Basic",
+  "hit": "0. Smoke test (free plan) > Upcoming market holidays"
+ },
+ {
+  "cls": "Stocks",
+  "name": "Market Status",
+  "ep": "/v1/marketstatus/now",
+  "plan": "Basic",
+  "hit": "0. Smoke test (free plan) > Market status now"
+ },
+ {
+  "cls": "Stocks",
+  "name": "News",
+  "ep": "/v2/reference/news",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Full Market Snapshot",
+  "ep": "/v2/snapshot/locale/us/markets/stocks/tickers",
+  "plan": "Starter",
+  "hit": "1. Stocks > Snapshot (watchlist)"
+ },
+ {
+  "cls": "Stocks",
+  "name": "Single Ticker Snapshot",
+  "ep": "/v2/snapshot/locale/us/markets/stocks/tickers/{stocksTicker}",
+  "plan": "Starter",
+  "hit": "1. Stocks > Snapshot (single ticker)"
+ },
+ {
+  "cls": "Stocks",
+  "name": "Top Market Movers",
+  "ep": "/v2/snapshot/locale/us/markets/stocks/{direction}",
+  "plan": "Starter",
+  "hit": "1. Stocks > Snapshot (watchlist)"
+ },
+ {
+  "cls": "Stocks",
+  "name": "Unified Snapshot",
+  "ep": "/v3/snapshot",
+  "plan": "Starter",
+  "hit": "1. Stocks > Unified snapshot v3"
+ },
+ {
+  "cls": "Stocks",
+  "name": "Exponential Moving Average (EMA)",
+  "ep": "/v1/indicators/ema/{stockTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Moving Average Convergence/Divergence (MACD)",
+  "ep": "/v1/indicators/macd/{stockTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Relative Strength Index (RSI)",
+  "ep": "/v1/indicators/rsi/{stockTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Simple Moving Average (SMA)",
+  "ep": "/v1/indicators/sma/{stockTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "All Tickers",
+  "ep": "/v3/reference/tickers",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Related Tickers",
+  "ep": "/v1/related-companies/{ticker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Ticker Overview",
+  "ep": "/v3/reference/tickers/{ticker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Ticker Types",
+  "ep": "/v3/reference/tickers/types",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Stocks",
+  "name": "Last Quote",
+  "ep": "/v2/last/nbbo/{stocksTicker}",
+  "plan": "Advanced",
+  "hit": "1. Stocks > Last NBBO quote"
+ },
+ {
+  "cls": "Stocks",
+  "name": "Last Trade",
+  "ep": "/v2/last/trade/{stocksTicker}",
+  "plan": "Developer",
+  "hit": "1. Stocks > Last trade"
+ },
+ {
+  "cls": "Stocks",
+  "name": "Quotes",
+  "ep": "/v3/quotes/{stockTicker}",
+  "plan": "Advanced",
+  "hit": "1. Stocks > Quotes (v3)"
+ },
+ {
+  "cls": "Stocks",
+  "name": "Trades",
+  "ep": "/v3/trades/{stockTicker}",
+  "plan": "Developer",
+  "hit": "1. Stocks > Trades (v3)"
+ },
+ {
+  "cls": "Options",
+  "name": "Custom Bars (OHLC)",
+  "ep": "/v2/aggs/ticker/{optionsTicker}/range/{multiplier}/{timespan}/{from}/{to}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Daily Ticker Summary (OHLC)",
+  "ep": "/v1/open-close/{optionsTicker}/{date}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Previous Day Bar (OHLC)",
+  "ep": "/v2/aggs/ticker/{optionsTicker}/prev",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "All Contracts",
+  "ep": "/v3/reference/options/contracts",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Contract Overview",
+  "ep": "/v3/reference/options/contracts/{options_ticker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Condition Codes",
+  "ep": "/v3/reference/conditions",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Exchanges",
+  "ep": "/v3/reference/exchanges",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Market Holidays",
+  "ep": "/v1/marketstatus/upcoming",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Market Status",
+  "ep": "/v1/marketstatus/now",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Option Chain Snapshot",
+  "ep": "/v3/snapshot/options/{underlyingAsset}",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Option Contract Snapshot",
+  "ep": "/v3/snapshot/options/{underlyingAsset}/{optionContract}",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Unified Snapshot",
+  "ep": "/v3/snapshot",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Exponential Moving Average (EMA)",
+  "ep": "/v1/indicators/ema/{optionsTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Moving Average Convergence/Divergence (MACD)",
+  "ep": "/v1/indicators/macd/{optionsTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Relative Strength Index (RSI)",
+  "ep": "/v1/indicators/rsi/{optionsTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Simple Moving Average (SMA)",
+  "ep": "/v1/indicators/sma/{optionsTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Last Trade",
+  "ep": "/v2/last/trade/{optionsTicker}",
+  "plan": "Developer",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Quotes",
+  "ep": "/v3/quotes/{optionsTicker}",
+  "plan": "Advanced",
+  "hit": null
+ },
+ {
+  "cls": "Options",
+  "name": "Trades",
+  "ep": "/v3/trades/{optionsTicker}",
+  "plan": "Developer",
+  "hit": null
+ },
+ {
+  "cls": "Futures",
+  "name": "Aggregate Bars (OHLC)",
+  "ep": "/futures/v1/aggs/{ticker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Futures",
+  "name": "Contracts",
+  "ep": "/futures/v1/contracts",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Futures",
+  "name": "Exchanges",
+  "ep": "/futures/v1/exchanges",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Futures",
+  "name": "Market Status",
+  "ep": "/futures/v1/market-status",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Futures",
+  "name": "Products",
+  "ep": "/futures/v1/products",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Futures",
+  "name": "Schedules",
+  "ep": "/futures/v1/schedules",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Futures",
+  "name": "Futures Contracts Snapshot",
+  "ep": "/futures/v1/snapshot",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Futures",
+  "name": "Quotes",
+  "ep": "/futures/v1/quotes/{ticker}",
+  "plan": "Developer",
+  "hit": null
+ },
+ {
+  "cls": "Futures",
+  "name": "Trades",
+  "ep": "/futures/v1/trades/{ticker}",
+  "plan": "Developer",
+  "hit": null
+ },
+ {
+  "cls": "Indices",
+  "name": "Custom Bars (OHLC)",
+  "ep": "/v2/aggs/ticker/{indicesTicker}/range/{multiplier}/{timespan}/{from}/{to}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Indices",
+  "name": "Daily Ticker Summary (OHLC)",
+  "ep": "/v1/open-close/{indicesTicker}/{date}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Indices",
+  "name": "Previous Day Bar (OHLC)",
+  "ep": "/v2/aggs/ticker/{indicesTicker}/prev",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Indices",
+  "name": "Market Holidays",
+  "ep": "/v1/marketstatus/upcoming",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Indices",
+  "name": "Market Status",
+  "ep": "/v1/marketstatus/now",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Indices",
+  "name": "Indices Snapshot",
+  "ep": "/v3/snapshot/indices",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Indices",
+  "name": "Unified Snapshot",
+  "ep": "/v3/snapshot",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Indices",
+  "name": "Exponential Moving Average (EMA)",
+  "ep": "/v1/indicators/ema/{indicesTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Indices",
+  "name": "Moving Average Convergence/Divergence (MACD)",
+  "ep": "/v1/indicators/macd/{indicesTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Indices",
+  "name": "Relative Strength Index (RSI)",
+  "ep": "/v1/indicators/rsi/{indicesTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Indices",
+  "name": "Simple Moving Average (SMA)",
+  "ep": "/v1/indicators/sma/{indicesTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Indices",
+  "name": "All Tickers",
+  "ep": "/v3/reference/tickers",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Indices",
+  "name": "Ticker Overview",
+  "ep": "/v3/reference/tickers/{ticker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Custom Bars (OHLC)",
+  "ep": "/v2/aggs/ticker/{forexTicker}/range/{multiplier}/{timespan}/{from}/{to}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Daily Market Summary (OHLC)",
+  "ep": "/v2/aggs/grouped/locale/global/market/fx/{date}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Previous Day Bar (OHLC)",
+  "ep": "/v2/aggs/ticker/{forexTicker}/prev",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Currency Conversion",
+  "ep": "/v1/conversion/{from}/{to}",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Exchanges",
+  "ep": "/v3/reference/exchanges",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Market Holidays",
+  "ep": "/v1/marketstatus/upcoming",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Market Status",
+  "ep": "/v1/marketstatus/now",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Last Quote",
+  "ep": "/v1/last_quote/currencies/{from}/{to}",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Quotes",
+  "ep": "/v3/quotes/{fxTicker}",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Full Market Snapshot",
+  "ep": "/v2/snapshot/locale/global/markets/forex/tickers",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Single Ticker Snapshot",
+  "ep": "/v2/snapshot/locale/global/markets/forex/tickers/{ticker}",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Top Market Movers",
+  "ep": "/v2/snapshot/locale/global/markets/forex/{direction}",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Unified Snapshot",
+  "ep": "/v3/snapshot",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Exponential Moving Average (EMA)",
+  "ep": "/v1/indicators/ema/{fxTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Moving Average Convergence/Divergence (MACD)",
+  "ep": "/v1/indicators/macd/{fxTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Relative Strength Index (RSI)",
+  "ep": "/v1/indicators/rsi/{fxTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Simple Moving Average (SMA)",
+  "ep": "/v1/indicators/sma/{fxTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "All Tickers",
+  "ep": "/v3/reference/tickers",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Ticker Overview",
+  "ep": "/v3/reference/tickers/{ticker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Forex",
+  "name": "Ticker Types",
+  "ep": "/v3/reference/tickers/types",
+  "plan": "add-on (see docs)",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Custom Bars (OHLC)",
+  "ep": "/v2/aggs/ticker/{cryptoTicker}/range/{multiplier}/{timespan}/{from}/{to}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Daily Market Summary (OHLC)",
+  "ep": "/v2/aggs/grouped/locale/global/market/crypto/{date}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Daily Ticker Summary (OHLC)",
+  "ep": "/v1/open-close/crypto/{from}/{to}/{date}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Previous Day Bar (OHLC)",
+  "ep": "/v2/aggs/ticker/{cryptoTicker}/prev",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Condition Codes",
+  "ep": "/v3/reference/conditions",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Exchanges",
+  "ep": "/v3/reference/exchanges",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Market Holidays",
+  "ep": "/v1/marketstatus/upcoming",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Market Status",
+  "ep": "/v1/marketstatus/now",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Full Market Snapshot",
+  "ep": "/v2/snapshot/locale/global/markets/crypto/tickers",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Single Ticker Snapshot",
+  "ep": "/v2/snapshot/locale/global/markets/crypto/tickers/{ticker}",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Top Market Movers",
+  "ep": "/v2/snapshot/locale/global/markets/crypto/{direction}",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Unified Snapshot",
+  "ep": "/v3/snapshot",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Exponential Moving Average (EMA)",
+  "ep": "/v1/indicators/ema/{cryptoTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Moving Average Convergence/Divergence (MACD)",
+  "ep": "/v1/indicators/macd/{cryptoTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Relative Strength Index (RSI)",
+  "ep": "/v1/indicators/rsi/{cryptoTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Simple Moving Average (SMA)",
+  "ep": "/v1/indicators/sma/{cryptoTicker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "All Tickers",
+  "ep": "/v3/reference/tickers",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Ticker Overview",
+  "ep": "/v3/reference/tickers/{ticker}",
+  "plan": "Basic",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Last Trade",
+  "ep": "/v1/last/crypto/{from}/{to}",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Crypto",
+  "name": "Trades",
+  "ep": "/v3/trades/{cryptoTicker}",
+  "plan": "Starter",
+  "hit": null
+ },
+ {
+  "cls": "Economy",
+  "name": "Funding Conditions",
+  "ep": "/fed/v1/funding-conditions",
+  "plan": "any plan",
+  "hit": null
+ },
+ {
+  "cls": "Economy",
+  "name": "Inflation",
+  "ep": "/fed/v1/inflation",
+  "plan": "any plan",
+  "hit": null
+ },
+ {
+  "cls": "Economy",
+  "name": "Inflation Expectations",
+  "ep": "/fed/v1/inflation-expectations",
+  "plan": "any plan",
+  "hit": null
+ },
+ {
+  "cls": "Economy",
+  "name": "Labor Market",
+  "ep": "/fed/v1/labor-market",
+  "plan": "any plan",
+  "hit": null
+ },
+ {
+  "cls": "Economy",
+  "name": "Treasury Yields",
+  "ep": "/fed/v1/treasury-yields",
+  "plan": "any plan",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "Merchant Aggregates",
+  "ep": "/consumer-spending/eu/v1/merchant-aggregates",
+  "plan": "add-on (European Consumer Spending by Merchant)",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "Merchant Hierarchy",
+  "ep": "/consumer-spending/eu/v1/merchant-hierarchy",
+  "plan": "add-on (European Consumer Spending by Merchant)",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "Analyst Details",
+  "ep": "/benzinga/v1/analysts",
+  "plan": "add-on (Benzinga Analyst Ratings)",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "Analyst Insights",
+  "ep": "/benzinga/v1/analyst-insights",
+  "plan": "add-on (Benzinga Analyst Insights)",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "Analyst Ratings",
+  "ep": "/benzinga/v1/ratings",
+  "plan": "add-on (Benzinga Analyst Ratings)",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "Bulls Bears Say",
+  "ep": "/benzinga/v1/bulls-bears-say",
+  "plan": "add-on (Benzinga Bulls Bears Say)",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "Consensus Ratings",
+  "ep": "/benzinga/v1/consensus-ratings/{ticker}",
+  "plan": "add-on (Benzinga Analyst Ratings)",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "Corporate Guidance",
+  "ep": "/benzinga/v1/guidance",
+  "plan": "add-on (Benzinga Corporate Guidance)",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "Earnings",
+  "ep": "/benzinga/v1/earnings",
+  "plan": "add-on (Benzinga Earnings)",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "Firm Details",
+  "ep": "/benzinga/v1/firms",
+  "plan": "add-on (Benzinga Analyst Ratings)",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "Real-time Benzinga News",
+  "ep": "/benzinga/v2/news",
+  "plan": "add-on (Benzinga News)",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "ETF Analytics",
+  "ep": "/etf-global/v1/analytics",
+  "plan": "add-on (see docs)",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "ETF Constituents",
+  "ep": "/etf-global/v1/constituents",
+  "plan": "add-on (ETF Global Constituents)",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "ETF Fund Flows",
+  "ep": "/etf-global/v1/fund-flows",
+  "plan": "add-on (ETF Global Fund Flows)",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "ETF Profiles & Exposure",
+  "ep": "/etf-global/v1/profiles",
+  "plan": "add-on (ETF Global Profiles & Exposure)",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "ETF Taxonomies",
+  "ep": "/etf-global/v1/taxonomies",
+  "plan": "add-on (ETF Global Taxonomies)",
+  "hit": null
+ },
+ {
+  "cls": "Alternative & Partner Data",
+  "name": "Corporate Events",
+  "ep": "/tmx/v1/corporate-events",
+  "plan": "add-on (TMX Corporate Events)",
+  "hit": null
+ }
+]

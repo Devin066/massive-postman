@@ -1,0 +1,4802 @@
+{
+  "info": {
+    "_postman_id": "4427d71b-1f6b-41de-8d48-53168a98f05f",
+    "name": "Massive.com Market Data API",
+    "description": "Massive.com (formerly Polygon.io) REST API examples covering every documented REST endpoint. Auth is a Bearer header from the `MASSIVE_API_KEY` environment variable; the key never goes in URLs. Each request description notes the minimum plan. Run '0. Smoke test' first.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "auth": {
+    "type": "bearer",
+    "bearer": [
+      {
+        "key": "token",
+        "value": "{{MASSIVE_API_KEY}}",
+        "type": "string"
+      }
+    ]
+  },
+  "event": [
+    {
+      "listen": "prerequest",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "// Fill {{from}}, {{to}}, {{date}} automatically unless you set them in the environment.",
+          "const fmt = (d) => d.toISOString().slice(0, 10);",
+          "const lastWeekday = () => {",
+          "  const d = new Date();",
+          "  d.setUTCDate(d.getUTCDate() - 1);",
+          "  while ([0, 6].includes(d.getUTCDay())) d.setUTCDate(d.getUTCDate() - 1);",
+          "  return d;",
+          "};",
+          "const get = (k) => pm.environment.get(k) || pm.collectionVariables.get(k);",
+          "if (!get(\"date\")) pm.variables.set(\"date\", fmt(lastWeekday()));",
+          "if (!get(\"to\")) pm.variables.set(\"to\", fmt(lastWeekday()));",
+          "if (!get(\"from\")) { const d = lastWeekday(); d.setUTCDate(d.getUTCDate() - 30); pm.variables.set(\"from\", fmt(d)); }",
+          "if (!get(\"MASSIVE_API_KEY\")) console.warn(\"MASSIVE_API_KEY is empty: select the 'Massive' environment and set it.\");"
+        ]
+      }
+    },
+    {
+      "listen": "test",
+      "script": {
+        "type": "text/javascript",
+        "exec": [
+          "const code = pm.response.code;",
+          "pm.test(\"HTTP 200\", () => pm.expect(code).to.eql(200));",
+          "let body; try { body = pm.response.json(); } catch (e) {}",
+          "if (body && !Array.isArray(body) && body.status) {",
+          "  pm.test(\"status is OK or DELAYED\", () => pm.expect([\"OK\", \"DELAYED\"]).to.include(body.status));",
+          "  if (body.status === \"DELAYED\") console.log(\"Data is DELAYED (plan recency).\");",
+          "}",
+          "if (code === 401) console.warn(\"401: check MASSIVE_API_KEY in the environment.\");",
+          "if (code === 403) console.warn(\"403 NOT_AUTHORIZED: your plan does not include this endpoint, recency, or history. The key is not broken.\");",
+          "if (code === 429) console.warn(\"429: rate limited (free plan is about 5 calls/min). Wait a minute.\");",
+          "if (code === 400) console.warn(\"400: a parameter is invalid. Check the request description and the endpoint docs.\");",
+          "if (code === 404) console.warn(\"404: unknown ticker or contract. Option/futures contracts expire: refresh optionTicker / futuresTicker.\");",
+          "if (body && body.next_url) {",
+          "  pm.collectionVariables.set(\"next_url\", body.next_url);",
+          "  console.log(\"More pages: run '13. Pagination > Follow next_url'.\");",
+          "}"
+        ]
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "next_url",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "0. Smoke test (free plan)",
+      "description": "Run these first. They work on every plan, including free.",
+      "item": [
+        {
+          "name": "Market status now",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/marketstatus/now",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "marketstatus",
+                "now"
+              ]
+            },
+            "description": "Plan: Basic (free) and up. Bare object, no envelope. Covers stocks, options, indices, fx, crypto."
+          },
+          "response": []
+        },
+        {
+          "name": "Upcoming market holidays",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/marketstatus/upcoming",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "marketstatus",
+                "upcoming"
+              ]
+            },
+            "description": "Plan: Basic (free) and up. Bare array, no envelope."
+          },
+          "response": []
+        },
+        {
+          "name": "Previous close (stock)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/aggs/ticker/{{stockTicker}}/prev?adjusted=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "aggs",
+                "ticker",
+                "{{stockTicker}}",
+                "prev"
+              ],
+              "query": [
+                {
+                  "key": "adjusted",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "1. Stocks",
+      "description": "Bare symbols: AAPL, BRK.B, SPY.",
+      "item": [
+        {
+          "name": "Bars (daily range)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/aggs/ticker/{{stockTicker}}/range/1/day/{{from}}/{{to}}?adjusted=true&sort=asc&limit=50000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "aggs",
+                "ticker",
+                "{{stockTicker}}",
+                "range",
+                "1",
+                "day",
+                "{{from}}",
+                "{{to}}"
+              ],
+              "query": [
+                {
+                  "key": "adjusted",
+                  "value": "true"
+                },
+                {
+                  "key": "sort",
+                  "value": "asc"
+                },
+                {
+                  "key": "limit",
+                  "value": "50000"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up. `t` is the bar START in ms."
+          },
+          "response": []
+        },
+        {
+          "name": "Bars (5-minute range)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/aggs/ticker/{{stockTicker}}/range/5/minute/{{date}}/{{date}}?adjusted=true&sort=asc&limit=50000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "aggs",
+                "ticker",
+                "{{stockTicker}}",
+                "range",
+                "5",
+                "minute",
+                "{{date}}",
+                "{{date}}"
+              ],
+              "query": [
+                {
+                  "key": "adjusted",
+                  "value": "true"
+                },
+                {
+                  "key": "sort",
+                  "value": "asc"
+                },
+                {
+                  "key": "limit",
+                  "value": "50000"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up. Missing minutes are gaps, not zero-volume bars."
+          },
+          "response": []
+        },
+        {
+          "name": "Daily open/close",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/open-close/{{stockTicker}}/{{date}}?adjusted=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "open-close",
+                "{{stockTicker}}",
+                "{{date}}"
+              ],
+              "query": [
+                {
+                  "key": "adjusted",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Grouped daily (whole market)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/aggs/grouped/locale/us/market/stocks/{{date}}?adjusted=true",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "aggs",
+                "grouped",
+                "locale",
+                "us",
+                "market",
+                "stocks",
+                "{{date}}"
+              ],
+              "query": [
+                {
+                  "key": "adjusted",
+                  "value": "true"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Snapshot (single ticker)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/snapshot/locale/us/markets/stocks/tickers/{{stockTicker}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "snapshot",
+                "locale",
+                "us",
+                "markets",
+                "stocks",
+                "tickers",
+                "{{stockTicker}}"
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic). `updated`, `lastTrade.t` are ns."
+          },
+          "response": []
+        },
+        {
+          "name": "Snapshot (watchlist)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/snapshot/locale/us/markets/stocks/tickers?tickers={{watchlist}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "snapshot",
+                "locale",
+                "us",
+                "markets",
+                "stocks",
+                "tickers"
+              ],
+              "query": [
+                {
+                  "key": "tickers",
+                  "value": "{{watchlist}}"
+                }
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic). Drop `tickers` for the full market."
+          },
+          "response": []
+        },
+        {
+          "name": "Top gainers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/snapshot/locale/us/markets/stocks/gainers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "snapshot",
+                "locale",
+                "us",
+                "markets",
+                "stocks",
+                "gainers"
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic)."
+          },
+          "response": []
+        },
+        {
+          "name": "Top losers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/snapshot/locale/us/markets/stocks/losers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "snapshot",
+                "locale",
+                "us",
+                "markets",
+                "stocks",
+                "losers"
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic)."
+          },
+          "response": []
+        },
+        {
+          "name": "Unified snapshot v3",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/snapshot?ticker.any_of={{watchlist}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "snapshot"
+              ],
+              "query": [
+                {
+                  "key": "ticker.any_of",
+                  "value": "{{watchlist}}"
+                }
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic)."
+          },
+          "response": []
+        },
+        {
+          "name": "Unified snapshot v3 (mixed assets)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/snapshot?ticker.any_of={{stockTicker}},{{indexTicker}},{{optionTicker}},{{cryptoTicker}},{{fxTicker}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "snapshot"
+              ],
+              "query": [
+                {
+                  "key": "ticker.any_of",
+                  "value": "{{stockTicker}},{{indexTicker}},{{optionTicker}},{{cryptoTicker}},{{fxTicker}}"
+                }
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic). One call across stocks, indices, options, crypto, and forex. Each asset needs its own plan; unentitled tickers come back with an error entry."
+          },
+          "response": []
+        },
+        {
+          "name": "Last trade",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/last/trade/{{stockTicker}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "last",
+                "trade",
+                "{{stockTicker}}"
+              ]
+            },
+            "description": "Plan: Developer and up. 15-min delayed until Advanced."
+          },
+          "response": []
+        },
+        {
+          "name": "Trades (v3)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/trades/{{stockTicker}}?limit=100&sort=timestamp&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "trades",
+                "{{stockTicker}}"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "sort",
+                  "value": "timestamp"
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Plan: Developer and up. Timestamps in ns."
+          },
+          "response": []
+        },
+        {
+          "name": "Last NBBO quote",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/last/nbbo/{{stockTicker}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "last",
+                "nbbo",
+                "{{stockTicker}}"
+              ]
+            },
+            "description": "Plan: Advanced and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Quotes (v3)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/quotes/{{stockTicker}}?limit=100&sort=timestamp&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "quotes",
+                "{{stockTicker}}"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "sort",
+                  "value": "timestamp"
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Plan: Advanced and up."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "2. Stocks: corporate actions & fundamentals",
+      "description": "Company-level data. Most is Basic; financial statements and ratios need Advanced.",
+      "item": [
+        {
+          "name": "Dividends",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/v1/dividends?ticker={{stockTicker}}&sort=ex_dividend_date.desc&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "v1",
+                "dividends"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "sort",
+                  "value": "ex_dividend_date.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up. Replaces the deprecated /v3/reference/dividends."
+          },
+          "response": []
+        },
+        {
+          "name": "Splits",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/v1/splits?ticker={{stockTicker}}&sort=execution_date.desc&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "v1",
+                "splits"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "sort",
+                  "value": "execution_date.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up. Replaces the deprecated /v3/reference/splits."
+          },
+          "response": []
+        },
+        {
+          "name": "IPOs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vX/reference/ipos?listing_date.gte={{from}}&order=desc&sort=listing_date&limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vX",
+                "reference",
+                "ipos"
+              ],
+              "query": [
+                {
+                  "key": "listing_date.gte",
+                  "value": "{{from}}"
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                },
+                {
+                  "key": "sort",
+                  "value": "listing_date"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up. Experimental (vX) path."
+          },
+          "response": []
+        },
+        {
+          "name": "Ticker events (symbol changes)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/vX/reference/tickers/META/events?types=ticker_change",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "vX",
+                "reference",
+                "tickers",
+                "META",
+                "events"
+              ],
+              "query": [
+                {
+                  "key": "types",
+                  "value": "ticker_change"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up. `id` is a ticker, CUSIP, or composite FIGI. META shows the FB→META change. `ticker_change` is the only event type."
+          },
+          "response": []
+        },
+        {
+          "name": "Float",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/vX/float?ticker={{stockTicker}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "vX",
+                "float"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{stockTicker}}"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Short interest",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/v1/short-interest?ticker={{stockTicker}}&sort=settlement_date.desc&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "v1",
+                "short-interest"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "sort",
+                  "value": "settlement_date.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up. Updated every 2 weeks."
+          },
+          "response": []
+        },
+        {
+          "name": "Short volume",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/v1/short-volume?ticker={{stockTicker}}&sort=date.desc&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "v1",
+                "short-volume"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "sort",
+                  "value": "date.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Income statements",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/financials/v1/income-statements?tickers={{stockTicker}}&timeframe=quarterly&sort=period_end.desc&limit=4",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "financials",
+                "v1",
+                "income-statements"
+              ],
+              "query": [
+                {
+                  "key": "tickers",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "timeframe",
+                  "value": "quarterly"
+                },
+                {
+                  "key": "sort",
+                  "value": "period_end.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "4"
+                }
+              ]
+            },
+            "description": "Plan: Advanced and up. `timeframe`: quarterly, annual, trailing_twelve_months."
+          },
+          "response": []
+        },
+        {
+          "name": "Balance sheets",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/financials/v1/balance-sheets?tickers={{stockTicker}}&timeframe=quarterly&sort=period_end.desc&limit=4",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "financials",
+                "v1",
+                "balance-sheets"
+              ],
+              "query": [
+                {
+                  "key": "tickers",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "timeframe",
+                  "value": "quarterly"
+                },
+                {
+                  "key": "sort",
+                  "value": "period_end.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "4"
+                }
+              ]
+            },
+            "description": "Plan: Advanced and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Cash flow statements",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/financials/v1/cash-flow-statements?tickers={{stockTicker}}&timeframe=quarterly&sort=period_end.desc&limit=4",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "financials",
+                "v1",
+                "cash-flow-statements"
+              ],
+              "query": [
+                {
+                  "key": "tickers",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "timeframe",
+                  "value": "quarterly"
+                },
+                {
+                  "key": "sort",
+                  "value": "period_end.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "4"
+                }
+              ]
+            },
+            "description": "Plan: Advanced and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Ratios",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/financials/v1/ratios?ticker={{stockTicker}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "financials",
+                "v1",
+                "ratios"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{stockTicker}}"
+                }
+              ]
+            },
+            "description": "Plan: Advanced and up."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "3. Stocks: SEC filings",
+      "description": "Parsed SEC EDGAR data. Plan: Basic (free) and up. Experimental (vX) paths.",
+      "item": [
+        {
+          "name": "EDGAR filing index",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/filings/vX/index?ticker={{stockTicker}}&form_type=10-K&sort=filing_date.desc&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "filings",
+                "vX",
+                "index"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "form_type",
+                  "value": "10-K"
+                },
+                {
+                  "key": "sort",
+                  "value": "filing_date.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "10-K sections",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/filings/10-K/vX/sections?ticker={{stockTicker}}&sort=filing_date.desc&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "filings",
+                "10-K",
+                "vX",
+                "sections"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "sort",
+                  "value": "filing_date.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "8-K disclosures",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/filings/8-K/vX/disclosures?tickers={{stockTicker}}&sort=filing_date.desc&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "filings",
+                "8-K",
+                "vX",
+                "disclosures"
+              ],
+              "query": [
+                {
+                  "key": "tickers",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "sort",
+                  "value": "filing_date.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "8-K text",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/filings/8-K/vX/text?ticker={{stockTicker}}&sort=filing_date.desc&limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "filings",
+                "8-K",
+                "vX",
+                "text"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "sort",
+                  "value": "filing_date.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Form 3 (initial ownership)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/filings/vX/form-3?tickers={{stockTicker}}&sort=filing_date.desc&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "filings",
+                "vX",
+                "form-3"
+              ],
+              "query": [
+                {
+                  "key": "tickers",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "sort",
+                  "value": "filing_date.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Form 4 (insider transactions)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/filings/vX/form-4?tickers={{stockTicker}}&sort=filing_date.desc&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "filings",
+                "vX",
+                "form-4"
+              ],
+              "query": [
+                {
+                  "key": "tickers",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "sort",
+                  "value": "filing_date.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "13-F filings",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/filings/vX/13-F?filing_date.gte={{from}}&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "filings",
+                "vX",
+                "13-F"
+              ],
+              "query": [
+                {
+                  "key": "filing_date.gte",
+                  "value": "{{from}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up. Filter one manager with `filer_cik`."
+          },
+          "response": []
+        },
+        {
+          "name": "Risk factors",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/filings/vX/risk-factors?ticker={{stockTicker}}&sort=filing_date.desc&limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "filings",
+                "vX",
+                "risk-factors"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "sort",
+                  "value": "filing_date.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Risk categories (taxonomy)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/taxonomies/vX/risk-factors?limit=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "taxonomies",
+                "vX",
+                "risk-factors"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Disclosure categories (taxonomy)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/stocks/taxonomies/vX/disclosures?limit=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "stocks",
+                "taxonomies",
+                "vX",
+                "disclosures"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "4. Indices",
+      "description": "I: prefix: I:SPX, I:NDX, I:DJI, I:VIX. Needs an Indices plan.",
+      "item": [
+        {
+          "name": "Indices snapshot",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/snapshot/indices?ticker.any_of={{indexTicker}},I:NDX,I:DJI,I:VIX",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "snapshot",
+                "indices"
+              ],
+              "query": [
+                {
+                  "key": "ticker.any_of",
+                  "value": "{{indexTicker}},I:NDX,I:DJI,I:VIX"
+                }
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic). Level is `value`. No volume."
+          },
+          "response": []
+        },
+        {
+          "name": "Bars (daily range)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/aggs/ticker/{{indexTicker}}/range/1/day/{{from}}/{{to}}?sort=asc&limit=50000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "aggs",
+                "ticker",
+                "{{indexTicker}}",
+                "range",
+                "1",
+                "day",
+                "{{from}}",
+                "{{to}}"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "asc"
+                },
+                {
+                  "key": "limit",
+                  "value": "50000"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Previous close",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/aggs/ticker/{{indexTicker}}/prev",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "aggs",
+                "ticker",
+                "{{indexTicker}}",
+                "prev"
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Daily open/close",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/open-close/{{indexTicker}}/{{date}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "open-close",
+                "{{indexTicker}}",
+                "{{date}}"
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Ticker search (indices)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/tickers?market=indices&search=nasdaq&active=true&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "tickers"
+              ],
+              "query": [
+                {
+                  "key": "market",
+                  "value": "indices"
+                },
+                {
+                  "key": "search",
+                  "value": "nasdaq"
+                },
+                {
+                  "key": "active",
+                  "value": "true"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Ticker details (index)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/tickers/{{indexTicker}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "tickers",
+                "{{indexTicker}}"
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "5. Options",
+      "description": "O: + OCC symbol, e.g. O:AAPL261218C00200000. Use 'Contracts for underlying' to find a live contract and paste it into optionTicker.",
+      "item": [
+        {
+          "name": "Contracts for underlying",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/options/contracts?underlying_ticker={{stockTicker}}&expired=false&limit=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "options",
+                "contracts"
+              ],
+              "query": [
+                {
+                  "key": "underlying_ticker",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "expired",
+                  "value": "false"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Contract details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/options/contracts/{{optionTicker}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "options",
+                "contracts",
+                "{{optionTicker}}"
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Option chain snapshot",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/snapshot/options/{{stockTicker}}?limit=50",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "snapshot",
+                "options",
+                "{{stockTicker}}"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "50"
+                }
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic)."
+          },
+          "response": []
+        },
+        {
+          "name": "Contract snapshot",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/snapshot/options/{{stockTicker}}/{{optionTicker}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "snapshot",
+                "options",
+                "{{stockTicker}}",
+                "{{optionTicker}}"
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic)."
+          },
+          "response": []
+        },
+        {
+          "name": "Previous close (contract)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/aggs/ticker/{{optionTicker}}/prev",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "aggs",
+                "ticker",
+                "{{optionTicker}}",
+                "prev"
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Bars (daily range)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/aggs/ticker/{{optionTicker}}/range/1/day/{{from}}/{{to}}?sort=asc&limit=50000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "aggs",
+                "ticker",
+                "{{optionTicker}}",
+                "range",
+                "1",
+                "day",
+                "{{from}}",
+                "{{to}}"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "asc"
+                },
+                {
+                  "key": "limit",
+                  "value": "50000"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Daily open/close",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/open-close/{{optionTicker}}/{{date}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "open-close",
+                "{{optionTicker}}",
+                "{{date}}"
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Last trade",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/last/trade/{{optionTicker}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "last",
+                "trade",
+                "{{optionTicker}}"
+              ]
+            },
+            "description": "Plan: Developer and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Trades (v3)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/trades/{{optionTicker}}?limit=100&sort=timestamp&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "trades",
+                "{{optionTicker}}"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "sort",
+                  "value": "timestamp"
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Plan: Developer and up. Timestamps in ns."
+          },
+          "response": []
+        },
+        {
+          "name": "Quotes (v3)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/quotes/{{optionTicker}}?limit=100&sort=timestamp&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "quotes",
+                "{{optionTicker}}"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "sort",
+                  "value": "timestamp"
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Plan: Advanced and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Exchanges (options)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/exchanges?asset_class=options",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "exchanges"
+              ],
+              "query": [
+                {
+                  "key": "asset_class",
+                  "value": "options"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Conditions (options)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/conditions?asset_class=options&limit=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "conditions"
+              ],
+              "query": [
+                {
+                  "key": "asset_class",
+                  "value": "options"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "6. Futures",
+      "description": "Separate API family under /futures/v1. `futuresProduct` (ES) is a filter; `futuresTicker` (ESZ6) is a contract. Find the front month with 'Contracts for product'. Bars use `resolution` (1min…59min, 1hour, 1session; no `day`). Timestamps are ns. Needs a Futures plan.",
+      "item": [
+        {
+          "name": "Contracts for product",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/futures/v1/contracts?product_code={{futuresProduct}}&active=true&sort=last_trade_date.asc&limit=5",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "futures",
+                "v1",
+                "contracts"
+              ],
+              "query": [
+                {
+                  "key": "product_code",
+                  "value": "{{futuresProduct}}"
+                },
+                {
+                  "key": "active",
+                  "value": "true"
+                },
+                {
+                  "key": "sort",
+                  "value": "last_trade_date.asc"
+                },
+                {
+                  "key": "limit",
+                  "value": "5"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up. First row is the front month."
+          },
+          "response": []
+        },
+        {
+          "name": "Products",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/futures/v1/products?product_code={{futuresProduct}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "futures",
+                "v1",
+                "products"
+              ],
+              "query": [
+                {
+                  "key": "product_code",
+                  "value": "{{futuresProduct}}"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Schedules",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/futures/v1/schedules?product_code={{futuresProduct}}&session_end_date.gte={{to}}&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "futures",
+                "v1",
+                "schedules"
+              ],
+              "query": [
+                {
+                  "key": "product_code",
+                  "value": "{{futuresProduct}}"
+                },
+                {
+                  "key": "session_end_date.gte",
+                  "value": "{{to}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up. Exchange time (CT for CME Group)."
+          },
+          "response": []
+        },
+        {
+          "name": "Market status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/futures/v1/market-status?product_code={{futuresProduct}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "futures",
+                "v1",
+                "market-status"
+              ],
+              "query": [
+                {
+                  "key": "product_code",
+                  "value": "{{futuresProduct}}"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Exchanges",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/futures/v1/exchanges",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "futures",
+                "v1",
+                "exchanges"
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Bars (daily sessions)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/futures/v1/aggs/{{futuresTicker}}?resolution=1session&window_start.gte={{from}}&window_start.lte={{to}}&sort=window_start.asc&limit=1000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "futures",
+                "v1",
+                "aggs",
+                "{{futuresTicker}}"
+              ],
+              "query": [
+                {
+                  "key": "resolution",
+                  "value": "1session"
+                },
+                {
+                  "key": "window_start.gte",
+                  "value": "{{from}}"
+                },
+                {
+                  "key": "window_start.lte",
+                  "value": "{{to}}"
+                },
+                {
+                  "key": "sort",
+                  "value": "window_start.asc"
+                },
+                {
+                  "key": "limit",
+                  "value": "1000"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up. 8-hour delay on Basic. A session bar's window_start is the day before its session_end_date."
+          },
+          "response": []
+        },
+        {
+          "name": "Bars (5-minute)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/futures/v1/aggs/{{futuresTicker}}?resolution=5min&window_start.gte={{date}}&sort=window_start.asc&limit=500",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "futures",
+                "v1",
+                "aggs",
+                "{{futuresTicker}}"
+              ],
+              "query": [
+                {
+                  "key": "resolution",
+                  "value": "5min"
+                },
+                {
+                  "key": "window_start.gte",
+                  "value": "{{date}}"
+                },
+                {
+                  "key": "sort",
+                  "value": "window_start.asc"
+                },
+                {
+                  "key": "limit",
+                  "value": "500"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Snapshot (products)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/futures/v1/snapshot?product_code.any_of={{futuresProduct}},NQ,CL,GC",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "futures",
+                "v1",
+                "snapshot"
+              ],
+              "query": [
+                {
+                  "key": "product_code.any_of",
+                  "value": "{{futuresProduct}},NQ,CL,GC"
+                }
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic). 10-min delayed below Advanced."
+          },
+          "response": []
+        },
+        {
+          "name": "Trades",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/futures/v1/trades/{{futuresTicker}}?sort=timestamp.desc&limit=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "futures",
+                "v1",
+                "trades",
+                "{{futuresTicker}}"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "timestamp.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Plan: Developer and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Quotes",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/futures/v1/quotes/{{futuresTicker}}?sort=timestamp.desc&limit=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "futures",
+                "v1",
+                "quotes",
+                "{{futuresTicker}}"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "timestamp.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Plan: Developer and up."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "7. Crypto",
+      "description": "REST uses X:BTCUSD (WebSocket uses BTC-USD). Real-time from Starter.",
+      "item": [
+        {
+          "name": "Previous close",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/aggs/ticker/{{cryptoTicker}}/prev",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "aggs",
+                "ticker",
+                "{{cryptoTicker}}",
+                "prev"
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Bars (hourly range)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/aggs/ticker/{{cryptoTicker}}/range/1/hour/{{from}}/{{to}}?sort=asc&limit=50000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "aggs",
+                "ticker",
+                "{{cryptoTicker}}",
+                "range",
+                "1",
+                "hour",
+                "{{from}}",
+                "{{to}}"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "asc"
+                },
+                {
+                  "key": "limit",
+                  "value": "50000"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Daily open/close",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/open-close/crypto/BTC/USD/{{date}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "open-close",
+                "crypto",
+                "BTC",
+                "USD",
+                "{{date}}"
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Grouped daily",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/aggs/grouped/locale/global/market/crypto/{{date}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "aggs",
+                "grouped",
+                "locale",
+                "global",
+                "market",
+                "crypto",
+                "{{date}}"
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Snapshot (single)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/snapshot/locale/global/markets/crypto/tickers/{{cryptoTicker}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "snapshot",
+                "locale",
+                "global",
+                "markets",
+                "crypto",
+                "tickers",
+                "{{cryptoTicker}}"
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic)."
+          },
+          "response": []
+        },
+        {
+          "name": "Snapshot (full market)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/snapshot/locale/global/markets/crypto/tickers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "snapshot",
+                "locale",
+                "global",
+                "markets",
+                "crypto",
+                "tickers"
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic). Add `?tickers=` to filter."
+          },
+          "response": []
+        },
+        {
+          "name": "Top gainers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/snapshot/locale/global/markets/crypto/gainers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "snapshot",
+                "locale",
+                "global",
+                "markets",
+                "crypto",
+                "gainers"
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic)."
+          },
+          "response": []
+        },
+        {
+          "name": "Top losers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/snapshot/locale/global/markets/crypto/losers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "snapshot",
+                "locale",
+                "global",
+                "markets",
+                "crypto",
+                "losers"
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic)."
+          },
+          "response": []
+        },
+        {
+          "name": "Last trade",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/last/crypto/BTC/USD",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "last",
+                "crypto",
+                "BTC",
+                "USD"
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic)."
+          },
+          "response": []
+        },
+        {
+          "name": "Trades (v3)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/trades/{{cryptoTicker}}?limit=100&sort=timestamp&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "trades",
+                "{{cryptoTicker}}"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "sort",
+                  "value": "timestamp"
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic). Timestamps in ns."
+          },
+          "response": []
+        },
+        {
+          "name": "Ticker search (crypto)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/tickers?market=crypto&search=bitcoin&active=true&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "tickers"
+              ],
+              "query": [
+                {
+                  "key": "market",
+                  "value": "crypto"
+                },
+                {
+                  "key": "search",
+                  "value": "bitcoin"
+                },
+                {
+                  "key": "active",
+                  "value": "true"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Ticker details (crypto)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/tickers/{{cryptoTicker}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "tickers",
+                "{{cryptoTicker}}"
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Exchanges (crypto)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/exchanges?asset_class=crypto",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "exchanges"
+              ],
+              "query": [
+                {
+                  "key": "asset_class",
+                  "value": "crypto"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Conditions (crypto)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/conditions?asset_class=crypto&limit=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "conditions"
+              ],
+              "query": [
+                {
+                  "key": "asset_class",
+                  "value": "crypto"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "8. Forex",
+      "description": "REST uses C:EURUSD (WebSocket uses EUR/USD). Real-time from Starter.",
+      "item": [
+        {
+          "name": "Previous close",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/aggs/ticker/{{fxTicker}}/prev",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "aggs",
+                "ticker",
+                "{{fxTicker}}",
+                "prev"
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Bars (hourly range)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/aggs/ticker/{{fxTicker}}/range/1/hour/{{from}}/{{to}}?sort=asc&limit=50000",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "aggs",
+                "ticker",
+                "{{fxTicker}}",
+                "range",
+                "1",
+                "hour",
+                "{{from}}",
+                "{{to}}"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "asc"
+                },
+                {
+                  "key": "limit",
+                  "value": "50000"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Grouped daily",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/aggs/grouped/locale/global/market/fx/{{date}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "aggs",
+                "grouped",
+                "locale",
+                "global",
+                "market",
+                "fx",
+                "{{date}}"
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Currency conversion",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/conversion/EUR/USD?amount=100&precision=4",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "conversion",
+                "EUR",
+                "USD"
+              ],
+              "query": [
+                {
+                  "key": "amount",
+                  "value": "100"
+                },
+                {
+                  "key": "precision",
+                  "value": "4"
+                }
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic)."
+          },
+          "response": []
+        },
+        {
+          "name": "Last quote",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/last_quote/currencies/EUR/USD",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "last_quote",
+                "currencies",
+                "EUR",
+                "USD"
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic)."
+          },
+          "response": []
+        },
+        {
+          "name": "Quotes (v3)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/quotes/{{fxTicker}}?limit=100&sort=timestamp&order=desc",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "quotes",
+                "{{fxTicker}}"
+              ],
+              "query": [
+                {
+                  "key": "limit",
+                  "value": "100"
+                },
+                {
+                  "key": "sort",
+                  "value": "timestamp"
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                }
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic). Timestamps in ns."
+          },
+          "response": []
+        },
+        {
+          "name": "Snapshot (single)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/snapshot/locale/global/markets/forex/tickers/{{fxTicker}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "snapshot",
+                "locale",
+                "global",
+                "markets",
+                "forex",
+                "tickers",
+                "{{fxTicker}}"
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic)."
+          },
+          "response": []
+        },
+        {
+          "name": "Snapshot (full market)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/snapshot/locale/global/markets/forex/tickers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "snapshot",
+                "locale",
+                "global",
+                "markets",
+                "forex",
+                "tickers"
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic). Add `?tickers=` to filter."
+          },
+          "response": []
+        },
+        {
+          "name": "Top gainers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/snapshot/locale/global/markets/forex/gainers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "snapshot",
+                "locale",
+                "global",
+                "markets",
+                "forex",
+                "gainers"
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic)."
+          },
+          "response": []
+        },
+        {
+          "name": "Top losers",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/snapshot/locale/global/markets/forex/losers",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "snapshot",
+                "locale",
+                "global",
+                "markets",
+                "forex",
+                "losers"
+              ]
+            },
+            "description": "Plan: Starter and up (403 NOT_AUTHORIZED on Basic)."
+          },
+          "response": []
+        },
+        {
+          "name": "Ticker search (fx)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/tickers?market=fx&search=euro&active=true&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "tickers"
+              ],
+              "query": [
+                {
+                  "key": "market",
+                  "value": "fx"
+                },
+                {
+                  "key": "search",
+                  "value": "euro"
+                },
+                {
+                  "key": "active",
+                  "value": "true"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Ticker details (fx)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/tickers/{{fxTicker}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "tickers",
+                "{{fxTicker}}"
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        },
+        {
+          "name": "Ticker types (fx)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/tickers/types?asset_class=fx&locale=global",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "tickers",
+                "types"
+              ],
+              "query": [
+                {
+                  "key": "asset_class",
+                  "value": "fx"
+                },
+                {
+                  "key": "locale",
+                  "value": "global"
+                }
+              ]
+            },
+            "description": "Plan: see docs (listed as an add-on for fx)."
+          },
+          "response": []
+        },
+        {
+          "name": "Exchanges (fx)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/exchanges?asset_class=fx",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "exchanges"
+              ],
+              "query": [
+                {
+                  "key": "asset_class",
+                  "value": "fx"
+                }
+              ]
+            },
+            "description": "Plan: Basic (free) and up."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "9. Technical indicators",
+      "description": "results.values[].timestamp is ms. Same endpoints for every asset class; only the ticker changes.",
+      "item": [
+        {
+          "name": "Stocks",
+          "item": [
+            {
+              "name": "SMA (stock)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/sma/{{stockTicker}}?timespan=day&window=50&series_type=close&adjusted=true&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "sma",
+                    "{{stockTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "window",
+                      "value": "50"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "adjusted",
+                      "value": "true"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up."
+              },
+              "response": []
+            },
+            {
+              "name": "EMA (stock)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/ema/{{stockTicker}}?timespan=day&window=20&series_type=close&adjusted=true&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "ema",
+                    "{{stockTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "window",
+                      "value": "20"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "adjusted",
+                      "value": "true"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up."
+              },
+              "response": []
+            },
+            {
+              "name": "RSI (stock)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/rsi/{{stockTicker}}?timespan=day&window=14&series_type=close&adjusted=true&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "rsi",
+                    "{{stockTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "window",
+                      "value": "14"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "adjusted",
+                      "value": "true"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up."
+              },
+              "response": []
+            },
+            {
+              "name": "MACD (stock)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/macd/{{stockTicker}}?timespan=day&short_window=12&long_window=26&signal_window=9&series_type=close&adjusted=true&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "macd",
+                    "{{stockTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "short_window",
+                      "value": "12"
+                    },
+                    {
+                      "key": "long_window",
+                      "value": "26"
+                    },
+                    {
+                      "key": "signal_window",
+                      "value": "9"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "adjusted",
+                      "value": "true"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Indices",
+          "item": [
+            {
+              "name": "SMA (index)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/sma/{{indexTicker}}?timespan=day&window=50&series_type=close&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "sma",
+                    "{{indexTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "window",
+                      "value": "50"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up. Needs an Indices plan."
+              },
+              "response": []
+            },
+            {
+              "name": "EMA (index)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/ema/{{indexTicker}}?timespan=day&window=20&series_type=close&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "ema",
+                    "{{indexTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "window",
+                      "value": "20"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up. Needs an Indices plan."
+              },
+              "response": []
+            },
+            {
+              "name": "RSI (index)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/rsi/{{indexTicker}}?timespan=day&window=14&series_type=close&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "rsi",
+                    "{{indexTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "window",
+                      "value": "14"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up. Needs an Indices plan."
+              },
+              "response": []
+            },
+            {
+              "name": "MACD (index)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/macd/{{indexTicker}}?timespan=day&short_window=12&long_window=26&signal_window=9&series_type=close&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "macd",
+                    "{{indexTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "short_window",
+                      "value": "12"
+                    },
+                    {
+                      "key": "long_window",
+                      "value": "26"
+                    },
+                    {
+                      "key": "signal_window",
+                      "value": "9"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up. Needs an Indices plan."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Options",
+          "item": [
+            {
+              "name": "SMA (option)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/sma/{{optionTicker}}?timespan=day&window=50&series_type=close&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "sma",
+                    "{{optionTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "window",
+                      "value": "50"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up."
+              },
+              "response": []
+            },
+            {
+              "name": "EMA (option)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/ema/{{optionTicker}}?timespan=day&window=20&series_type=close&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "ema",
+                    "{{optionTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "window",
+                      "value": "20"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up."
+              },
+              "response": []
+            },
+            {
+              "name": "RSI (option)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/rsi/{{optionTicker}}?timespan=day&window=14&series_type=close&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "rsi",
+                    "{{optionTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "window",
+                      "value": "14"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up."
+              },
+              "response": []
+            },
+            {
+              "name": "MACD (option)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/macd/{{optionTicker}}?timespan=day&short_window=12&long_window=26&signal_window=9&series_type=close&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "macd",
+                    "{{optionTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "short_window",
+                      "value": "12"
+                    },
+                    {
+                      "key": "long_window",
+                      "value": "26"
+                    },
+                    {
+                      "key": "signal_window",
+                      "value": "9"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Crypto",
+          "item": [
+            {
+              "name": "SMA (crypto)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/sma/{{cryptoTicker}}?timespan=day&window=50&series_type=close&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "sma",
+                    "{{cryptoTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "window",
+                      "value": "50"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up."
+              },
+              "response": []
+            },
+            {
+              "name": "EMA (crypto)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/ema/{{cryptoTicker}}?timespan=day&window=20&series_type=close&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "ema",
+                    "{{cryptoTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "window",
+                      "value": "20"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up."
+              },
+              "response": []
+            },
+            {
+              "name": "RSI (crypto)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/rsi/{{cryptoTicker}}?timespan=day&window=14&series_type=close&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "rsi",
+                    "{{cryptoTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "window",
+                      "value": "14"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up."
+              },
+              "response": []
+            },
+            {
+              "name": "MACD (crypto)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/macd/{{cryptoTicker}}?timespan=day&short_window=12&long_window=26&signal_window=9&series_type=close&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "macd",
+                    "{{cryptoTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "short_window",
+                      "value": "12"
+                    },
+                    {
+                      "key": "long_window",
+                      "value": "26"
+                    },
+                    {
+                      "key": "signal_window",
+                      "value": "9"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Forex",
+          "item": [
+            {
+              "name": "SMA (fx)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/sma/{{fxTicker}}?timespan=day&window=50&series_type=close&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "sma",
+                    "{{fxTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "window",
+                      "value": "50"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up."
+              },
+              "response": []
+            },
+            {
+              "name": "EMA (fx)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/ema/{{fxTicker}}?timespan=day&window=20&series_type=close&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "ema",
+                    "{{fxTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "window",
+                      "value": "20"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up."
+              },
+              "response": []
+            },
+            {
+              "name": "RSI (fx)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/rsi/{{fxTicker}}?timespan=day&window=14&series_type=close&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "rsi",
+                    "{{fxTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "window",
+                      "value": "14"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up."
+              },
+              "response": []
+            },
+            {
+              "name": "MACD (fx)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/v1/indicators/macd/{{fxTicker}}?timespan=day&short_window=12&long_window=26&signal_window=9&series_type=close&order=desc&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "v1",
+                    "indicators",
+                    "macd",
+                    "{{fxTicker}}"
+                  ],
+                  "query": [
+                    {
+                      "key": "timespan",
+                      "value": "day"
+                    },
+                    {
+                      "key": "short_window",
+                      "value": "12"
+                    },
+                    {
+                      "key": "long_window",
+                      "value": "26"
+                    },
+                    {
+                      "key": "signal_window",
+                      "value": "9"
+                    },
+                    {
+                      "key": "series_type",
+                      "value": "close"
+                    },
+                    {
+                      "key": "order",
+                      "value": "desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Plan: Basic (free) and up."
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "10. Reference",
+      "description": "Plan: Basic (free) and up.",
+      "item": [
+        {
+          "name": "Ticker search",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/tickers?search=apple&market=stocks&active=true&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "tickers"
+              ],
+              "query": [
+                {
+                  "key": "search",
+                  "value": "apple"
+                },
+                {
+                  "key": "market",
+                  "value": "stocks"
+                },
+                {
+                  "key": "active",
+                  "value": "true"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ticker details",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/tickers/{{stockTicker}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "tickers",
+                "{{stockTicker}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Ticker types",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/tickers/types",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "tickers",
+                "types"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Related companies",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v1/related-companies/{{stockTicker}}",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v1",
+                "related-companies",
+                "{{stockTicker}}"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "News",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v2/reference/news?ticker={{stockTicker}}&order=desc&limit=10",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v2",
+                "reference",
+                "news"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "order",
+                  "value": "desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "10"
+                }
+              ]
+            },
+            "description": "Titles may contain HTML entities."
+          },
+          "response": []
+        },
+        {
+          "name": "Exchanges",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/exchanges?asset_class=stocks",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "exchanges"
+              ],
+              "query": [
+                {
+                  "key": "asset_class",
+                  "value": "stocks"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Conditions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/conditions?asset_class=stocks&limit=100",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "conditions"
+              ],
+              "query": [
+                {
+                  "key": "asset_class",
+                  "value": "stocks"
+                },
+                {
+                  "key": "limit",
+                  "value": "100"
+                }
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Dividends (deprecated v3)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/dividends?ticker={{stockTicker}}&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "dividends"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Deprecated. Use '2. Stocks: corporate actions & fundamentals > Dividends'."
+          },
+          "response": []
+        },
+        {
+          "name": "Splits (deprecated v3)",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/v3/reference/splits?ticker={{stockTicker}}&limit=20",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "v3",
+                "reference",
+                "splits"
+              ],
+              "query": [
+                {
+                  "key": "ticker",
+                  "value": "{{stockTicker}}"
+                },
+                {
+                  "key": "limit",
+                  "value": "20"
+                }
+              ]
+            },
+            "description": "Deprecated. Use '2. Stocks: corporate actions & fundamentals > Splits'."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "11. Economy",
+      "description": "Federal Reserve data. Plan: any plan, including free.",
+      "item": [
+        {
+          "name": "Treasury yields",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/fed/v1/treasury-yields?date.gte={{from}}&sort=date.desc&limit=30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "fed",
+                "v1",
+                "treasury-yields"
+              ],
+              "query": [
+                {
+                  "key": "date.gte",
+                  "value": "{{from}}"
+                },
+                {
+                  "key": "sort",
+                  "value": "date.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "Plan: any plan. Updated daily."
+          },
+          "response": []
+        },
+        {
+          "name": "Inflation",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/fed/v1/inflation?sort=date.desc&limit=12",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "fed",
+                "v1",
+                "inflation"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "date.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "12"
+                }
+              ]
+            },
+            "description": "Plan: any plan. Updated monthly."
+          },
+          "response": []
+        },
+        {
+          "name": "Inflation expectations",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/fed/v1/inflation-expectations?sort=date.desc&limit=12",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "fed",
+                "v1",
+                "inflation-expectations"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "date.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "12"
+                }
+              ]
+            },
+            "description": "Plan: any plan. Updated monthly."
+          },
+          "response": []
+        },
+        {
+          "name": "Labor market",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/fed/v1/labor-market?sort=date.desc&limit=12",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "fed",
+                "v1",
+                "labor-market"
+              ],
+              "query": [
+                {
+                  "key": "sort",
+                  "value": "date.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "12"
+                }
+              ]
+            },
+            "description": "Plan: any plan. Updated monthly."
+          },
+          "response": []
+        },
+        {
+          "name": "Funding conditions",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{baseUrl}}/fed/v1/funding-conditions?date.gte={{from}}&sort=date.desc&limit=30",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "fed",
+                "v1",
+                "funding-conditions"
+              ],
+              "query": [
+                {
+                  "key": "date.gte",
+                  "value": "{{from}}"
+                },
+                {
+                  "key": "sort",
+                  "value": "date.desc"
+                },
+                {
+                  "key": "limit",
+                  "value": "30"
+                }
+              ]
+            },
+            "description": "Plan: any plan. Updated daily."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "12. Alternative & partner data",
+      "description": "Paid add-ons. Each returns 403 NOT_AUTHORIZED unless that add-on is on your account.",
+      "item": [
+        {
+          "name": "Benzinga",
+          "item": [
+            {
+              "name": "News (Benzinga v2)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/benzinga/v2/news?tickers={{stockTicker}}&limit=20",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "benzinga",
+                    "v2",
+                    "news"
+                  ],
+                  "query": [
+                    {
+                      "key": "tickers",
+                      "value": "{{stockTicker}}"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "Add-on: Benzinga News. Not in the base plans; 403 NOT_AUTHORIZED without it. Sorted by `published` desc by default."
+              },
+              "response": []
+            },
+            {
+              "name": "Analyst ratings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/benzinga/v1/ratings?ticker={{stockTicker}}&sort=date.desc&limit=20",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "benzinga",
+                    "v1",
+                    "ratings"
+                  ],
+                  "query": [
+                    {
+                      "key": "ticker",
+                      "value": "{{stockTicker}}"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "date.desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "Add-on: Benzinga Analyst Ratings. Not in the base plans; 403 NOT_AUTHORIZED without it."
+              },
+              "response": []
+            },
+            {
+              "name": "Consensus ratings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/benzinga/v1/consensus-ratings/{{stockTicker}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "benzinga",
+                    "v1",
+                    "consensus-ratings",
+                    "{{stockTicker}}"
+                  ]
+                },
+                "description": "Add-on: Benzinga Analyst Ratings. Not in the base plans; 403 NOT_AUTHORIZED without it."
+              },
+              "response": []
+            },
+            {
+              "name": "Analyst details",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/benzinga/v1/analysts?limit=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "benzinga",
+                    "v1",
+                    "analysts"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "50"
+                    }
+                  ]
+                },
+                "description": "Add-on: Benzinga Analyst Ratings. Not in the base plans; 403 NOT_AUTHORIZED without it."
+              },
+              "response": []
+            },
+            {
+              "name": "Firm details",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/benzinga/v1/firms?limit=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "benzinga",
+                    "v1",
+                    "firms"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "50"
+                    }
+                  ]
+                },
+                "description": "Add-on: Benzinga Analyst Ratings. Not in the base plans; 403 NOT_AUTHORIZED without it."
+              },
+              "response": []
+            },
+            {
+              "name": "Analyst insights",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/benzinga/v1/analyst-insights?ticker={{stockTicker}}&sort=date.desc&limit=20",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "benzinga",
+                    "v1",
+                    "analyst-insights"
+                  ],
+                  "query": [
+                    {
+                      "key": "ticker",
+                      "value": "{{stockTicker}}"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "date.desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "Add-on: Benzinga Analyst Insights. Not in the base plans; 403 NOT_AUTHORIZED without it."
+              },
+              "response": []
+            },
+            {
+              "name": "Bulls / bears say",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/benzinga/v1/bulls-bears-say?ticker={{stockTicker}}&limit=10",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "benzinga",
+                    "v1",
+                    "bulls-bears-say"
+                  ],
+                  "query": [
+                    {
+                      "key": "ticker",
+                      "value": "{{stockTicker}}"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "10"
+                    }
+                  ]
+                },
+                "description": "Add-on: Benzinga Bulls Bears Say. Not in the base plans; 403 NOT_AUTHORIZED without it."
+              },
+              "response": []
+            },
+            {
+              "name": "Earnings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/benzinga/v1/earnings?ticker={{stockTicker}}&sort=date.desc&limit=20",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "benzinga",
+                    "v1",
+                    "earnings"
+                  ],
+                  "query": [
+                    {
+                      "key": "ticker",
+                      "value": "{{stockTicker}}"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "date.desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "Add-on: Benzinga Earnings. Not in the base plans; 403 NOT_AUTHORIZED without it."
+              },
+              "response": []
+            },
+            {
+              "name": "Corporate guidance",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/benzinga/v1/guidance?ticker={{stockTicker}}&sort=date.desc&limit=20",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "benzinga",
+                    "v1",
+                    "guidance"
+                  ],
+                  "query": [
+                    {
+                      "key": "ticker",
+                      "value": "{{stockTicker}}"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "date.desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "Add-on: Benzinga Corporate Guidance. Not in the base plans; 403 NOT_AUTHORIZED without it."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "ETF Global",
+          "item": [
+            {
+              "name": "ETF profiles & exposure",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/etf-global/v1/profiles?composite_ticker={{etfTicker}}&sort=effective_date.desc&limit=5",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "etf-global",
+                    "v1",
+                    "profiles"
+                  ],
+                  "query": [
+                    {
+                      "key": "composite_ticker",
+                      "value": "{{etfTicker}}"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "effective_date.desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "5"
+                    }
+                  ]
+                },
+                "description": "Add-on: ETF Global Profiles & Exposure. Not in the base plans; 403 NOT_AUTHORIZED without it."
+              },
+              "response": []
+            },
+            {
+              "name": "ETF constituents",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/etf-global/v1/constituents?composite_ticker={{etfTicker}}&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "etf-global",
+                    "v1",
+                    "constituents"
+                  ],
+                  "query": [
+                    {
+                      "key": "composite_ticker",
+                      "value": "{{etfTicker}}"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Add-on: ETF Global Constituents. Not in the base plans; 403 NOT_AUTHORIZED without it."
+              },
+              "response": []
+            },
+            {
+              "name": "ETF fund flows",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/etf-global/v1/fund-flows?composite_ticker={{etfTicker}}&sort=effective_date.desc&limit=30",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "etf-global",
+                    "v1",
+                    "fund-flows"
+                  ],
+                  "query": [
+                    {
+                      "key": "composite_ticker",
+                      "value": "{{etfTicker}}"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "effective_date.desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "30"
+                    }
+                  ]
+                },
+                "description": "Add-on: ETF Global Fund Flows. Not in the base plans; 403 NOT_AUTHORIZED without it."
+              },
+              "response": []
+            },
+            {
+              "name": "ETF analytics",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/etf-global/v1/analytics?composite_ticker={{etfTicker}}&sort=effective_date.desc&limit=5",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "etf-global",
+                    "v1",
+                    "analytics"
+                  ],
+                  "query": [
+                    {
+                      "key": "composite_ticker",
+                      "value": "{{etfTicker}}"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "effective_date.desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "5"
+                    }
+                  ]
+                },
+                "description": "Add-on: ETF Global Analytics (see docs). Not in the base plans; 403 NOT_AUTHORIZED without it."
+              },
+              "response": []
+            },
+            {
+              "name": "ETF taxonomies",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/etf-global/v1/taxonomies?composite_ticker={{etfTicker}}&sort=effective_date.desc&limit=5",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "etf-global",
+                    "v1",
+                    "taxonomies"
+                  ],
+                  "query": [
+                    {
+                      "key": "composite_ticker",
+                      "value": "{{etfTicker}}"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "effective_date.desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "5"
+                    }
+                  ]
+                },
+                "description": "Add-on: ETF Global Taxonomies. Not in the base plans; 403 NOT_AUTHORIZED without it."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "TMX (Wall Street Horizon)",
+          "item": [
+            {
+              "name": "Corporate events",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/tmx/v1/corporate-events?ticker={{stockTicker}}&sort=date.desc&limit=20",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "tmx",
+                    "v1",
+                    "corporate-events"
+                  ],
+                  "query": [
+                    {
+                      "key": "ticker",
+                      "value": "{{stockTicker}}"
+                    },
+                    {
+                      "key": "sort",
+                      "value": "date.desc"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "20"
+                    }
+                  ]
+                },
+                "description": "Add-on: TMX Corporate Events. Not in the base plans; 403 NOT_AUTHORIZED without it."
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "European consumer spending",
+          "item": [
+            {
+              "name": "Merchant aggregates",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/consumer-spending/eu/v1/merchant-aggregates?transaction_date.gte={{from}}&limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "consumer-spending",
+                    "eu",
+                    "v1",
+                    "merchant-aggregates"
+                  ],
+                  "query": [
+                    {
+                      "key": "transaction_date.gte",
+                      "value": "{{from}}"
+                    },
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Add-on: European Consumer Spending by Merchant. Not in the base plans; 403 NOT_AUTHORIZED without it."
+              },
+              "response": []
+            },
+            {
+              "name": "Merchant hierarchy",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/consumer-spending/eu/v1/merchant-hierarchy?limit=100",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "consumer-spending",
+                    "eu",
+                    "v1",
+                    "merchant-hierarchy"
+                  ],
+                  "query": [
+                    {
+                      "key": "limit",
+                      "value": "100"
+                    }
+                  ]
+                },
+                "description": "Add-on: European Consumer Spending by Merchant. Not in the base plans; 403 NOT_AUTHORIZED without it."
+              },
+              "response": []
+            }
+          ]
+        }
+      ]
+    },
+    {
+      "name": "13. Pagination",
+      "description": "Run any list request that returns next_url, then this one.",
+      "item": [
+        {
+          "name": "Follow next_url",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{next_url}}"
+            },
+            "description": "Uses the next_url saved by the last response. The Bearer header is sent again (cursor URLs are not pre-authenticated)."
+          },
+          "response": []
+        }
+      ]
+    }
+  ]
+}
